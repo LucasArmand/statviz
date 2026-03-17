@@ -7,7 +7,7 @@ A real-time 3D probability distribution visualizer using stochastic ray marching
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 
-https://github.com/LucasArmand/statviz/raw/master/demo.mp4
+https://github.com/user-attachments/assets/e20cb576-8f1b-44b4-9679-1b9dee62c18b
 
 
 ## How It Works
