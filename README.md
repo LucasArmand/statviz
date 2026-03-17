@@ -6,6 +6,10 @@ A real-time 3D probability distribution visualizer using stochastic ray marching
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+
+https://github.com/LucasArmand/statviz/raw/master/demo.mp4
+
+
 ## How It Works
 
 The renderer executes a three-pass GPU pipeline every frame:
