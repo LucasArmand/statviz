@@ -1,0 +1,55 @@
+#version 450 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(r32f,  binding = 0) readonly  uniform image2D u_prob_tex;
+layout(r8ui,  binding = 1) writeonly uniform uimage2D u_output_tex;
+
+layout(std430, binding = 0) buffer SumBuffer {
+    uint total_sum;
+};
+
+uniform int u_width;
+uniform int u_height;
+uniform int u_sample_count;
+uniform uint u_frame;
+uniform int u_pass;
+
+// PCG hash
+uint pcg_hash(uint v) {
+    uint state = v * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+
+float rand_float(uvec2 pixel, uint frame) {
+    uint seed = pixel.x + pixel.y * uint(u_width) + frame * uint(u_width * u_height);
+    return float(pcg_hash(seed)) / 4294967295.0;
+}
+
+void main() {
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    if (coord.x >= u_width || coord.y >= u_height) return;
+
+    float prob = imageLoad(u_prob_tex, coord).r;
+
+    if (u_pass == 0) {
+        // Reduction pass: accumulate fixed-point probability
+        // Multiplier cancels in threshold calc; keep low to avoid uint32 overflow
+        uint fp = uint(prob * 100.0);
+        atomicAdd(total_sum, fp);
+    } else {
+        // Sampling pass: Bernoulli trial
+        uint total = total_sum;
+        float threshold = 0.0;
+        if (total > 0) {
+            float p_normalized = (prob * 100.0) / float(total);
+            threshold = p_normalized * float(u_sample_count);
+        }
+
+        threshold = min(threshold, 1.0);
+        float r = rand_float(uvec2(coord), u_frame);
+        uint result = (r < threshold) ? 1u : 0u;
+        imageStore(u_output_tex, coord, uvec4(result, 0, 0, 0));
+    }
+}
